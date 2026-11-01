@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="RAG-Based Technical Documentation Assistant — ask questions, visualize the agentic retrieval pipeline in real-time.">
+    <title>RAG Documentation Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                        <circle cx="12" cy="10" r="2" />
+                        <path d="M12 12v3" />
+                    </svg>
+                </div>
+                <div>
+                    <h1>RAG-Based Technical Documentation Assistant</h1>
+                    <span class="subtitle"> LangGraph · Gemini 3.8 Flash · ChromaDB</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-ghost" id="btn-docs" title="View indexed documents">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    Docs
+                </button>
+                <button class="btn btn-ghost" id="btn-ingest" title="Re-ingest documents">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Ingest
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+
+        <section class="query-section" id="query-section">
+            <div class="card query-card">
+                <h2 class="section-title">Ask a Question</h2>
+                <p class="section-desc">Query the indexed FastAPI documentation using the RAG pipeline</p>
+                <form id="query-form" class="query-form">
+                    <div class="input-group">
+                        <input type="text" id="question-input" placeholder="e.g. What does Depends do in FastAPI?"
+                            autocomplete="off" required />
+                        <button type="submit" class="btn btn-primary" id="submit-btn">
+                            <span class="btn-text">Ask Question</span>
+                            <svg class="btn-spinner hidden" width="20" height="20" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none"
+                                    stroke-dasharray="31.4 31.4" stroke-linecap="round">
+                                    <animateTransform attributeName="transform" type="rotate" dur="0.8s"
+                                        values="0 12 12;360 12 12" repeatCount="indefinite" />
+                                </circle>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+                <div class="quick-questions">
+                    <span class="quick-label">Try:</span>
+                    <button class="chip" data-q="What does Depends do in FastAPI?">Depends in FastAPI</button>
+                    <button class="chip" data-q="How does FastAPI validate request bodies?">Request Bodies</button>
+                    <button class="chip" data-q="How can I raise a 404 error in FastAPI?">HTTP Errors</button>
+                    <button class="chip" data-q="How do I deploy a Django application on AWS?">Django on AWS
+                        (irrelevant)</button>
+                </div>
+            </div>
+        </section>
+
+
+        <section class="pipeline-section hidden" id="pipeline-section">
+            <div class="card">
+                <h2 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
+                    RAG Pipeline Execution
+                </h2>
+                <div id="pipeline-steps" class="pipeline-steps"></div>
+            </div>
+        </section>
+
+
+        <section class="answer-section hidden" id="answer-section">
+            <div class="card answer-card">
+                <h2 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    Answer
+                </h2>
+                <div id="answer-content" class="answer-content"></div>
+                <div id="sources-block" class="sources-block hidden">
+                    <h3 class="sources-title">Sources</h3>
+                    <div id="sources-list" class="sources-list"></div>
+                </div>
+
+                <div id="feedback-section" class="feedback-section hidden">
+                    <div class="feedback-divider"></div>
+                    <p class="feedback-prompt">Was this answer helpful?</p>
+                    <div class="feedback-stars" id="feedback-stars">
+                        <button class="star-btn" data-rating="1">★</button>
+                        <button class="star-btn" data-rating="2">★</button>
+                        <button class="star-btn" data-rating="3">★</button>
+                        <button class="star-btn" data-rating="4">★</button>
+                        <button class="star-btn" data-rating="5">★</button>
+                    </div>
+                    <textarea id="feedback-text" class="feedback-textarea"
+                        placeholder="Optional: share your thoughts..." rows="2"></textarea>
+                    <button class="btn btn-secondary btn-sm" id="submit-feedback">Send Feedback</button>
+                    <p id="feedback-result" class="feedback-result hidden"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── INGEST MODAL ─────────────────────────────────────── -->
+        <div class="modal-overlay hidden" id="ingest-modal">
+            <div class="modal card" style="max-width: 580px;">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="logo-icon" style="width: 32px; height: 32px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        </div>
+                        <div>
+                            <h2>Ingest Knowledge</h2>
+                            <p style="font-size: 0.76rem; color: var(--text-secondary); margin: 0;">Add technical documentation to ChromaDB vector store</p>
+                        </div>
+                    </div>
+                    <button class="btn-close" id="ingest-close">&times;</button>
+                </div>
+
+                <!-- Ingest Tabs -->
+                <div class="ingest-tabs">
+                    <button class="ingest-tab active" data-tab="url">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        From URL
+                    </button>
+                    <button class="ingest-tab" data-tab="file">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                        Upload File
+                    </button>
+                    <button class="ingest-tab" data-tab="corpus">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                        Default Corpus
+                    </button>
+                </div>
+
+                <!-- Tab 1: URL -->
+                <div class="ingest-pane active" id="pane-url">
+                    <form id="form-ingest-url">
+                        <div class="form-group">
+                            <label class="form-label" for="input-ingest-url">Documentation URL</label>
+                            <input type="url" id="input-ingest-url" placeholder="e.g. https://fastapi.tiangolo.com/tutorial/query-params/" required />
+                            <span class="form-hint">Fetches live page or raw Markdown and embeds into ChromaDB.</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="input-ingest-url-title">Document Title <span class="muted">(Optional)</span></label>
+                            <input type="text" id="input-ingest-url-title" placeholder="e.g. FastAPI Query Parameters" />
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="btn-submit-url" style="width: 100%; justify-content: center;">
+                            <span class="btn-text">Ingest from URL</span>
+                            <svg class="btn-spinner hidden" width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" dur="0.8s" values="0 12 12;360 12 12" repeatCount="indefinite"/></circle></svg>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Tab 2: File Upload -->
+                <div class="ingest-pane hidden" id="pane-file">
+                    <form id="form-ingest-file">
+                        <div class="form-group">
+                            <label class="form-label">Select File (.md, .txt)</label>
+                            <div class="dropzone" id="file-dropzone">
+                                <input type="file" id="input-ingest-file" accept=".md,.markdown,.txt" style="display: none;" />
+                                <div class="dropzone-inner">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--neon-green); margin-bottom: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    <p id="dropzone-text" style="margin: 0; font-size: 0.85rem; color: var(--text-primary); font-weight: 500;">
+                                        Click to browse or drop file here
+                                    </p>
+                                    <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Supports Markdown & Text files</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="input-ingest-file-title">Document Title <span class="muted">(Optional)</span></label>
+                            <input type="text" id="input-ingest-file-title" placeholder="Defaults to file name or H1 title" />
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="btn-submit-file" style="width: 100%; justify-content: center;" disabled>
+                            <span class="btn-text">Upload & Ingest Document</span>
+                            <svg class="btn-spinner hidden" width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" dur="0.8s" values="0 12 12;360 12 12" repeatCount="indefinite"/></circle></svg>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Tab 3: Default Corpus -->
+                <div class="ingest-pane hidden" id="pane-corpus">
+                    <div style="padding: 12px 0 20px 0;">
+                        <p style="font-size: 0.86rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
+                            Re-index all official documentation files located in the project's local <code style="color: var(--neon-green);">docs/</code> directory:
+                        </p>
+                        <ul style="font-size: 0.80rem; color: var(--text-muted); list-style: disc; padding-left: 20px; line-height: 1.8; margin-bottom: 20px;">
+                            <li><strong style="color: #fff;">dependencies.md</strong> (FastAPI Dependencies & Depends)</li>
+                            <li><strong style="color: #fff;">request_body.md</strong> (Request Body & Pydantic Validation)</li>
+                            <li><strong style="color: #fff;">handling_errors.md</strong> (HTTPException & Error Handlers)</li>
+                        </ul>
+                        <button type="button" class="btn btn-primary" id="btn-submit-corpus" style="width: 100%; justify-content: center;">
+                            <span class="btn-text">Re-index Default Corpus</span>
+                            <svg class="btn-spinner hidden" width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" dur="0.8s" values="0 12 12;360 12 12" repeatCount="indefinite"/></circle></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ingest Progress / Result Message -->
+                <div id="ingest-status" class="ingest-status hidden"></div>
+            </div>
+        </div>
+
+
+        <div class="modal-overlay hidden" id="docs-modal">
+            <div class="modal card">
+                <div class="modal-header">
+                    <h2>Indexed Documents</h2>
+                    <button class="btn-close" id="docs-close">&times;</button>
+                </div>
+                <div id="docs-content" class="modal-body">
+                    <p class="muted">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="toast" class="toast hidden"></div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
